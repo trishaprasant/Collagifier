@@ -1,0 +1,82 @@
+% Trisha Prasant
+% BIOEN 217
+% 12/08/2020
+% Final: Collagifier
+clc; clear all; close all;
+%% Imports Library Photos
+n = 20; % Number of photos
+lib = [];
+for i = 1:n
+name = strcat(num2str(i), '.jpeg');
+img = imread(name);
+img = imresize(img, [200, 200]); % Resizes all library photos to 200x200 pixels
+lib = [lib, img];
+end
+%% Imports original Photo
+original = imread('tylerthecreator.jpg'); % Read in Base Image
+scale = 10; % Increase base image size
+originalWidth = 640 * scale;
+originalHeight = 640 * scale;
+original = imresize(original, scale);
+old = original;
+imshow(original)
+%% Chooses best fit library image
+% Replaces each 200 px block with best fit library image by comparing mean
+% values of each library image using score function defined below.
+for row = 0:(originalHeight / 200 - 1)
+for column = 0:(originalWidth / 200 - 1)
+A = original(200 * row + 1 : 200 * (row + 1), 200 * column + 1 : 200 * (column
++ 1), :);
+highScore = 0;
+numBlock = 0; % Number of block replaced
+i = 1;
+while i <= n % Iterates through each library image
+B = lib(:, 200 * (i - 1) + 1 : 200 * i, :);
+score = meanValueScore(A, B);
+if score > highScore % Replaces each score value if score is higher
+than image before
+numBlock = i;
+highScore = score;
+original(200 * row + 1 : 200 * (row + 1), 200 * column + 1 :
+200 * (column + 1), :) = B;
+end
+i = i + 1;
+end
+end
+end
+figure()
+imshow(original);
+%% Color-corrects each pixel block
+% Goes over each block of the collaged image and the original, computes the
+% mean RGB values of each block and then adjusts collaged image blocks to the
+mean RGB of the original image blocks.
+for row = 0:(originalHeight / 200 - 1)
+for column = 0:(originalWidth / 200 - 1)
+A = old(200 * row + 1 : 200 * (row + 1), 200 * column + 1 : 200 *
+(column + 1), :); % original image
+B = original(200 * row + 1 : 200 * (row + 1), 200 * column + 1 : 200 *
+(column + 1), :); % collaged image
+for c = 1:3
+adjust = mean(mean(A)) - mean(mean(B));
+B(:, :, c) = B(:, :, c) + adjust(1, 1, c); % adjusts mean RGB value
+of each pixel blocks to make new image
+end
+original(200 * row + 1 : 200 * (row + 1), 200 * column + 1 : 200 *
+(column + 1), :) = B;
+end
+end
+figure()
+imshow(original)
+%% Functions
+% This function calculates the mean RGB value of a library image and
+% subtracts it from the original image (done using a for loop, iterated 3
+% times for R, G and B components). Then it outputs a score value by
+% dividing it by 1 / mean RGB value to compare it with other library
+% images.
+function [output] = meanValueScore(A, B)
+x = 0;
+for i = 1:3
+x = x + mean(abs(mean(A(:,:,i)) - mean(B(:,:,i))));
+end
+output = 1/x;
+end
